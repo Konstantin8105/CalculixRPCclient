@@ -3,6 +3,7 @@ package clientCalculix
 import (
 	"fmt"
 	"net/rpc"
+	"sync"
 
 	"github.com/Konstantin8105/CalculixRPCserver/serverCalculix"
 )
@@ -38,86 +39,55 @@ func (c *ClientCalculix) GetIPServers() []string {
 }
 
 func (c *ClientCalculix) updateIPServers() {
-	fmt.Println("updateIPServers")
 	var ipServers []string
 	ch := make(chan string)
 	quit := make(chan int)
 
+	var wg sync.WaitGroup
+
 	go func() {
-		fmt.Println("In channel")
 		for c := range ch {
-			fmt.Println("channel.c = ", c)
 			ipServers = append(ipServers, c)
 		}
-		fmt.Println("quit <- 1")
 		quit <- 1
 	}()
 
-	for i := 8; i <= 10; i++ {
-		fmt.Println("i = ", i)
-		go func(port int) {
-			//fmt.Println("============")
-			serverAddress := fmt.Sprintf("%v%v", c.IPPrototype, port)
-			fmt.Println("serverAddress = ", serverAddress)
-			client, err := rpc.DialHTTP("tcp", serverAddress+":1234")
-			if err != nil {
-				fmt.Println("err = ", err)
-				//continue
-				return
-			}
-			///calculix := serverCalculix.NewCalculix()
-			fmt.Println("Create calculix")
-			//var amount int
-			var amount serverCalculix.Amount
-			err = client.Call("Calculix.MaxAllowableTasks", "", &amount)
-			if err != nil {
-				fmt.Println("err = ", err)
-				//continue
-				return
-			}
-			fmt.Println("amount task on server = ", amount)
-			if amount.A < 0 {
-				fmt.Println("err = ", err)
-				//continue
-				return
-			}
-			/*
-					var ttt string
-					err = client.Call("Calculix.AmountTasks", "empty", &ttt) //&amount)
-					fmt.Println(err, ttt)
-					if err != nil {
-						fmt.Println("err = ", err)
-						//continue
-						return
-					}
-				fmt.Println("amount task on server = ", amount)
-				if amount < 0 {
-					fmt.Println("err = ", err)
-					//continue
-					return
-				}
-			*/
-			fmt.Println("close client")
-			err = client.Close()
-			if err != nil {
-				fmt.Println("err = ", err)
-				//continue
-				return
-			}
-			fmt.Println("Add ip server")
-			//ipServers = append(ipServers, serverAddress)
-			fmt.Println("============")
-			ch <- serverAddress
-		}(i)
+	for i := 1; i <= 255; i++ {
+		wg.Add(1)
+		serverAddress := fmt.Sprintf("%v%v:1234", c.IPPrototype, i)
+		go func() {
+			defer wg.Done()
+			checkIP(serverAddress, ch)
+		}()
 	}
-	fmt.Println("<-quit")
-	<-quit
-	fmt.Println("close(ch)")
+	wg.Wait()
 	close(ch)
-	fmt.Println("============")
-	fmt.Println("List of server ip: ", ipServers)
-	fmt.Println("============")
+	<-quit
 	c.ipServers = ipServers
+}
+
+func checkIP(ip string, ch chan<- string) {
+	client, err := rpc.DialHTTP("tcp", ip)
+	if err != nil {
+		return
+	}
+	//var amount int
+	var amount serverCalculix.Amount
+	err = client.Call("Calculix.MaxAllowableTasks", "", &amount)
+	if err != nil {
+		fmt.Println("err = ", err)
+		return
+	}
+	if amount.A < 0 {
+		fmt.Println("err = ", err)
+		return
+	}
+	err = client.Close()
+	if err != nil {
+		fmt.Println("err = ", err)
+		return
+	}
+	ch <- ip
 }
 
 /*

@@ -7,6 +7,7 @@ import (
 )
 
 func main() {
-	client := clientCalculix.ClientCalculix{IPPrototype: "192.168.0."}
+	//client := clientCalculix.ClientCalculix{IPPrototype: "192.168.0."}
+	client := clientCalculix.ClientCalculix{IPPrototype: "192.168.5."}
 	fmt.Println("Servers:\n", client.GetIPServers())
 }
