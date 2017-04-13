@@ -79,7 +79,7 @@ func checkIP(ip string, ch chan<- string) {
 		return
 	}
 	if amount.A < 0 {
-		fmt.Println("err = ", err)
+		fmt.Println("Cannot allowable tasks less zero")
 		return
 	}
 	err = client.Close()
