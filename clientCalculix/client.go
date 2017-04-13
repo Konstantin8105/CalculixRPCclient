@@ -1,13 +1,5 @@
 package clientCalculix
 
-import (
-	"fmt"
-	"net/rpc"
-	"sync"
-
-	"github.com/Konstantin8105/CalculixRPCserver/serverCalculix"
-)
-
 // ClientCalculix - RPC client of Calculix
 type ClientCalculix struct {
 	tasks       []task
@@ -33,62 +25,10 @@ func (c *ClientCalculix) Calculate(inpBody []string) (datBody []string) {
 */
 
 // GetIPServers - send list of server ip
-func (c *ClientCalculix) GetIPServers() []string {
-	c.updateIPServers()
-	return c.ipServers
-}
-
-func (c *ClientCalculix) updateIPServers() {
-	var ipServers []string
-	ch := make(chan string)
-	quit := make(chan int)
-
-	var wg sync.WaitGroup
-
-	go func() {
-		for c := range ch {
-			ipServers = append(ipServers, c)
-		}
-		quit <- 1
-	}()
-
-	for i := 1; i <= 255; i++ {
-		wg.Add(1)
-		serverAddress := fmt.Sprintf("%v%v:1234", c.IPPrototype, i)
-		go func() {
-			defer wg.Done()
-			checkIP(serverAddress, ch)
-		}()
-	}
-	wg.Wait()
-	close(ch)
-	<-quit
-	c.ipServers = ipServers
-}
-
-func checkIP(ip string, ch chan<- string) {
-	client, err := rpc.DialHTTP("tcp", ip)
-	if err != nil {
-		return
-	}
-	//var amount int
-	var amount serverCalculix.Amount
-	err = client.Call("Calculix.MaxAllowableTasks", "", &amount)
-	if err != nil {
-		fmt.Println("err = ", err)
-		return
-	}
-	if amount.A < 0 {
-		fmt.Println("Cannot allowable tasks less zero")
-		return
-	}
-	err = client.Close()
-	if err != nil {
-		fmt.Println("err = ", err)
-		return
-	}
-	ch <- ip
-}
+//func (c *ClientCalculix) GetIPServers() []string {
+//	c.updateIPServers()
+//	return c.ipServers
+//}
 
 /*
 // scan IP adresess
