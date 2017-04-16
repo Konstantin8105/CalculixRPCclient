@@ -3,8 +3,10 @@ package clientCalculix
 import (
 	"bufio"
 	"fmt"
+	"net"
 	"net/rpc"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/Konstantin8105/CalculixRPCserver/serverCalculix"
@@ -16,20 +18,26 @@ const (
 
 // ServerManager - manager of servers
 type ServerManager struct {
-	ipServers   []string // IP allowable servers
-	IPPrototype string   // example: "192.168.5." or "192.168.0."
+	ipServers []string // IP allowable servers
 }
 
 // NewServerManager - create a new
-func NewServerManager(ipPrototype string) (s *ServerManager) {
+func NewServerManager() (s *ServerManager) {
 	s = new(ServerManager)
-	s.IPPrototype = ipPrototype
 	err := s.openFile()
 	if err == nil {
 		return
 	}
-	s.updateIPServers()
-	//TODO: add strategy for case - if len of ip list is zero
+	adresess, err := s.generateServersIP()
+	if err != nil {
+		fmt.Println("You haven`t local network")
+		os.Exit(0)
+	}
+	s.updateIPServers(adresess)
+	if len(s.ipServers) == 0 {
+		fmt.Println("Cannot search any servers")
+		os.Exit(0)
+	}
 	err = s.saveFile()
 	if err != nil {
 		fmt.Println("Error to save : ", err)
@@ -137,7 +145,32 @@ func (s *ServerManager) saveFile() (err error) {
 	return nil
 }
 
-func (s *ServerManager) updateIPServers() {
+func (s *ServerManager) generateServersIP() (addresses []string, err error) {
+
+	port := ":1234"
+
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return addresses, err
+	}
+
+	for _, a := range addrs {
+		if ipnet, ok := a.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				ad := strings.Split(ipnet.IP.String(), ".")
+				for i := 1; i <= 255; i++ {
+					addresses = append(addresses, fmt.Sprintf("%v.%v.%v.%v%v", ad[0], ad[1], ad[2], i, port))
+				}
+			}
+		}
+	}
+
+	serverCalculix.RemoveDuplicates(&addresses)
+
+	return addresses, nil
+}
+
+func (s *ServerManager) updateIPServers(addresses []string) {
 	var ipServers []string
 	ch := make(chan string)
 	quit := make(chan int)
@@ -151,13 +184,14 @@ func (s *ServerManager) updateIPServers() {
 		quit <- 1
 	}()
 
-	for i := 1; i <= 255; i++ {
+	for _, address := range addresses {
 		wg.Add(1)
-		serverAddress := fmt.Sprintf("%v%v:1234", s.IPPrototype, i)
-		go func() {
+		go func(address string) {
 			defer wg.Done()
-			s.checkIP(serverAddress, ch)
-		}()
+			if s.checkIP(address) {
+				ch <- address
+			}
+		}(address)
 	}
 	wg.Wait()
 	close(ch)
@@ -165,26 +199,26 @@ func (s *ServerManager) updateIPServers() {
 	s.ipServers = ipServers
 }
 
-func (s *ServerManager) checkIP(ip string, ch chan<- string) {
+func (s *ServerManager) checkIP(ip string) bool {
 	client, err := rpc.DialHTTP("tcp", ip)
 	if err != nil {
-		return
+		return false
 	}
 	//var amount int
 	var amount serverCalculix.Amount
 	err = client.Call("Calculix.MaxAllowableTasks", "", &amount)
 	if err != nil {
 		fmt.Println("err = ", err)
-		return
+		return false
 	}
 	if amount.A < 0 {
 		fmt.Println("Cannot allowable tasks less zero")
-		return
+		return false
 	}
 	err = client.Close()
 	if err != nil {
 		fmt.Println("err = ", err)
-		return
+		return false
 	}
-	ch <- ip
+	return true
 }

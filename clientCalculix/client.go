@@ -1,43 +1,41 @@
 package clientCalculix
 
+import (
+	"fmt"
+	"net/rpc"
+	"time"
+
+	"github.com/Konstantin8105/CalculixRPCserver/serverCalculix"
+)
+
 // ClientCalculix - RPC client of Calculix
 type ClientCalculix struct {
-	tasks   []task
-	manager ServerManager
+	Manager ServerManager
 }
 
-type task struct {
-	inpBody  string
-	ipServer string
-	datBody  string
-	err      error
-}
-
-/*
-// Calculate - calculation
-func (c *ClientCalculix) Calculate(inpBody []string) (datBody []string) {
-	c.updateIPServers()
-	for _, inp := range inpBody {
-
+func (c *ClientCalculix) getServer() (client *rpc.Client, err error) {
+	addresses := c.Manager.GetIPServers()
+	for {
+		for _, address := range addresses {
+			client, err = rpc.DialHTTP("tcp", address)
+			if err != nil {
+				return nil, fmt.Errorf("Cannot run : %v", err)
+			}
+			var amount serverCalculix.Amount
+			err = client.Call("Calculix.AmountTasks", "", &amount)
+			if err != nil {
+				return nil, err
+			}
+			if amount.A > 0 {
+				goto RUN
+			}
+			err = client.Close()
+			if err != nil {
+				return nil, err
+			}
+		}
+		time.Sleep(time.Second * 2)
 	}
+RUN:
+	return client, err
 }
-*/
-
-// GetIPServers - send list of server ip
-//func (c *ClientCalculix) GetIPServers() []string {
-//	c.updateIPServers()
-//	return c.ipServers
-//}
-
-/*
-// scan IP adresess
-
-// saving IP servers
-
-// create queue of calculations
-
-// try to found free servers
-
-// waiting
-
-*/
