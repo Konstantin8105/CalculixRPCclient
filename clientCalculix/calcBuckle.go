@@ -9,6 +9,9 @@ import (
 // CalculateForBuckle - calculation
 func (c *ClientCalculix) CalculateForBuckle(inpBody []string) (factors []float64, err error) {
 	dats, err := c.CalculateForDat(inpBody)
+	if err != nil {
+		return factors, err
+	}
 	for _, dat := range dats {
 		factor, err := getBucklingFactor(dat)
 		if err != nil {
@@ -66,14 +69,30 @@ func parseBucklingFactor(line string) (mode int, factor float64, err error) {
 	for i := range s {
 		s[i] = strings.TrimSpace(s[i])
 	}
-	i, err := strconv.ParseInt(s[0], 10, 64)
-	if err != nil {
-		return 0, 0, fmt.Errorf("Error: string parts - %v, error - %v, in line - %v", s, err, line)
+
+	var index int
+
+	for index = 0; index < len(s); index++ {
+		if len(s[index]) == 0 {
+			continue
+		}
+		i, err := strconv.ParseInt(s[index], 10, 64)
+		if err != nil {
+			return 0, 0, fmt.Errorf("Error: string parts - %v, error - %v, in line - %v", s, err, line)
+		}
+		mode = int(i)
+		break
 	}
-	mode = int(i)
-	factor, err = strconv.ParseFloat(s[1], 64)
-	if err != nil {
-		return 0, 0, fmt.Errorf("Error: string parts - %v, error - %v, in line - %v", s, err, line)
+
+	for index++; index < len(s); index++ {
+		if len(s[index]) == 0 {
+			continue
+		}
+		factor, err = strconv.ParseFloat(s[index], 64)
+		if err != nil {
+			return 0, 0, fmt.Errorf("Error: string parts - %v, error - %v, in line - %v", s, err, line)
+		}
+		break
 	}
 	return mode, factor, nil
 }

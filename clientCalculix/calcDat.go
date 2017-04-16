@@ -17,19 +17,23 @@ func (c *ClientCalculix) CalculateForDat(inpBody []string) (datBody []string, er
 	var blockData []block
 	blockChannel := make(chan block)
 	errChannel := make(chan error)
+	quitBlock := make(chan bool)
+	quitErr := make(chan bool)
 
 	var wg sync.WaitGroup
 
 	go func() {
-		for block := range blockChannel {
-			blockData = append(blockData, block)
+		for b := range blockChannel {
+			blockData = append(blockData, b)
 		}
+		quitBlock <- true
 	}()
 
 	go func() {
 		for e := range errChannel {
 			err = fmt.Errorf("Error: %v\n%v", e, err)
 		}
+		quitErr <- true
 	}()
 
 	for _, inp := range inpBody {
@@ -37,7 +41,7 @@ func (c *ClientCalculix) CalculateForDat(inpBody []string) (datBody []string, er
 		wg.Add(1)
 
 		// Launch a goroutine to fetch the inp file.
-		go func(inp string) {
+		go func(inpFile string) {
 			// Decrement the counter when the goroutine completes.
 			defer wg.Done()
 		BACK:
@@ -56,14 +60,14 @@ func (c *ClientCalculix) CalculateForDat(inpBody []string) (datBody []string, er
 			}
 
 			var dat serverCalculix.DatBody
-			err = client.Call("Calculix.ExecuteForDat", inp, &dat)
+			err = client.Call("Calculix.ExecuteForDat", inpFile, &dat)
 			if err != nil {
 				if err.Error() == serverCalculix.ErrorServerBusy {
 					goto BACK
 				}
 				errChannel <- err
 			}
-			blockChannel <- block{inp: inp, dat: dat.A}
+			blockChannel <- block{inp: inpFile, dat: dat.A}
 		}(inp)
 	}
 	// Wait for all inp body
@@ -72,6 +76,9 @@ func (c *ClientCalculix) CalculateForDat(inpBody []string) (datBody []string, er
 	// Close all opened channels
 	close(errChannel)
 	close(blockChannel)
+
+	<-quitBlock
+	<-quitErr
 
 	//repair sequene of result dat
 	for _, inp := range inpBody {
