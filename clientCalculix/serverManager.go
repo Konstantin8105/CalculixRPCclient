@@ -137,7 +137,7 @@ func (s *ServerManager) saveFile() (err error) {
 		return err
 	}
 	for _, line := range s.ipServers {
-		_, err = fmt.Fprintln(f, line)
+		_, err = fmt.Fprintf(f, "%v\n", line)
 		if err != nil {
 			return fmt.Errorf("Cannot write to file: %v", err)
 		}
