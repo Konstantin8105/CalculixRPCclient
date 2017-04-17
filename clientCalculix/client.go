@@ -34,7 +34,7 @@ func (c *ClientCalculix) getServer() (client *rpc.Client, err error) {
 				return nil, err
 			}
 		}
-		time.Sleep(time.Second * 2)
+		time.Sleep(2 * time.Second)
 	}
 RUN:
 	return client, err

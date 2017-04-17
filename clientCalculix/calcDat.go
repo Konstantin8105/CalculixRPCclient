@@ -80,6 +80,8 @@ func (c *ClientCalculix) CalculateForDat(inpBody []string) (datBody []string, er
 
 	<-quitBlock
 	<-quitErr
+	close(quitBlock)
+	close(quitErr)
 
 	//repair sequene of result dat
 	for _, inp := range inpBody {
