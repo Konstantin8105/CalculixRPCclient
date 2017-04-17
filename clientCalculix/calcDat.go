@@ -25,7 +25,7 @@ func (c *ClientCalculix) CalculateForDat(inpBody []string) (datBody []string, er
 	go func() {
 		for b := range blockChannel {
 			blockData = append(blockData, b)
-			fmt.Println("DAT client calculated task : ", len(blockData))
+			fmt.Printf("DAT client calculated task : %4v of %4v\n", len(blockData), len(inpBody))
 		}
 		quitBlock <- true
 	}()
