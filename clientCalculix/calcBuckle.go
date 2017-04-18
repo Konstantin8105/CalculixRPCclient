@@ -44,6 +44,7 @@ func getBucklingFactor(dat string) (factor float64, err error) {
 			}
 		} else {
 			numberLine++
+			fmt.Printf("%2v. line = %v\n", numberLine, line)
 			if numberLine >= 5+amountBuckling {
 				break
 			}
