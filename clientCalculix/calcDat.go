@@ -10,22 +10,22 @@ import (
 // CalculateForDat - calculation
 func (c *ClientCalculix) CalculateForDat(inpBody []string) (datBody []string, err error) {
 
+	inpMap := make(map[int]string)
+	datMap := make(map[int]string)
+
 	type block struct {
-		inp string
-		dat string
+		index int
+		value string
 	}
-	var blockData []block
 	blockChannel := make(chan block)
 	errChannel := make(chan error)
 	quitBlock := make(chan bool)
 	quitErr := make(chan bool)
 
-	var wg sync.WaitGroup
-
 	go func() {
 		for b := range blockChannel {
-			blockData = append(blockData, b)
-			fmt.Printf("DAT client calculated task : %4v of %4v\n", len(blockData), len(inpBody))
+			datMap[b.index] = b.value
+			fmt.Printf("DAT client calculated task : %4v of %4v\n", len(datMap), len(inpMap))
 		}
 		quitBlock <- true
 	}()
@@ -37,12 +37,19 @@ func (c *ClientCalculix) CalculateForDat(inpBody []string) (datBody []string, er
 		quitErr <- true
 	}()
 
-	for _, inp := range inpBody {
+	errGlobal := err
+
+	var wg sync.WaitGroup
+
+	for index, inp := range inpBody {
+		// add to inp map
+		inpMap[index] = inp
+
 		// Increment the WaitGroup counter.
 		wg.Add(1)
 
 		// Launch a goroutine to fetch the inp file.
-		go func(inpFile string) {
+		go func(index int, inpFile string) {
 			// Decrement the counter when the goroutine completes.
 			defer wg.Done()
 		BACK:
@@ -58,6 +65,10 @@ func (c *ClientCalculix) CalculateForDat(inpBody []string) (datBody []string, er
 					goto BACK
 				}
 				errChannel <- err
+				return
+			}
+			if errGlobal != nil {
+				return
 			}
 
 			var dat serverCalculix.DatBody
@@ -67,9 +78,10 @@ func (c *ClientCalculix) CalculateForDat(inpBody []string) (datBody []string, er
 					goto BACK
 				}
 				errChannel <- err
+				return
 			}
-			blockChannel <- block{inp: inpFile, dat: dat.A}
-		}(inp)
+			blockChannel <- block{index: index, value: dat.A}
+		}(index, inp)
 	}
 	// Wait for all inp body
 	wg.Wait()
@@ -84,10 +96,11 @@ func (c *ClientCalculix) CalculateForDat(inpBody []string) (datBody []string, er
 	close(quitErr)
 
 	//repair sequene of result dat
-	for _, inp := range inpBody {
-		for _, block := range blockData {
-			if inp == block.inp {
-				datBody = append(datBody, block.dat)
+	size := len(inpBody)
+	for index := 0; index < size; index++ {
+		for k, v := range datMap {
+			if index == k {
+				datBody = append(datBody, v)
 				goto NewInp
 			}
 		}

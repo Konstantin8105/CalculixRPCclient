@@ -66,7 +66,7 @@ func getBucklingFactor(dat string) (factor float64, err error) {
 // Example:
 //      4   0.4067088E+03
 func parseBucklingFactor(line string) (mode int, factor float64, err error) {
-	s := strings.Split(line, "   ")
+	s := strings.Split(line, " ")
 	for i := range s {
 		s[i] = strings.TrimSpace(s[i])
 	}
