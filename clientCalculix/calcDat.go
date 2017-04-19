@@ -38,8 +38,6 @@ func (c *ClientCalculix) CalculateForDat(inpBody []string) (datBody []string, er
 		quitErr <- true
 	}()
 
-	errGlobal := err
-
 	var wg sync.WaitGroup
 
 	for index, inp := range inpBody {
@@ -66,9 +64,6 @@ func (c *ClientCalculix) CalculateForDat(inpBody []string) (datBody []string, er
 					goto BACK
 				}
 				errChannel <- err
-				return
-			}
-			if errGlobal != nil {
 				return
 			}
 
