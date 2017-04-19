@@ -33,6 +33,7 @@ func (c *ClientCalculix) CalculateForDat(inpBody []string) (datBody []string, er
 	go func() {
 		for e := range errChannel {
 			err = fmt.Errorf("Error: %v\n%v", e, err)
+			fmt.Println("Error --> ", e)
 		}
 		quitErr <- true
 	}()
