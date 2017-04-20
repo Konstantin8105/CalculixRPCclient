@@ -78,6 +78,8 @@ func (c *ClientCalculix) CalculateForDat(inpBody []string) (datBody []string, er
 					goto BACK
 				}
 				errChannel <- err
+				// add default value for case without result
+				blockChannel <- block{index: index, value: ""}
 				return
 			}
 			blockChannel <- block{index: index, value: dat.A}
@@ -104,8 +106,15 @@ func (c *ClientCalculix) CalculateForDat(inpBody []string) (datBody []string, er
 				goto NewInp
 			}
 		}
+		// if some task is not calculated or
+		// computer disconnected, then
+		// put zero lenght string
+		datBody = append(datBody, "")
 	NewInp:
 	}
+
+	fmt.Println("Error before nullization: ", err)
+	err = nil
 
 	return datBody, err
 }

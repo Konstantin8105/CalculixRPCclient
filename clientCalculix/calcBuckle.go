@@ -9,10 +9,16 @@ import (
 // CalculateForBuckle - calculation
 func (c *ClientCalculix) CalculateForBuckle(inpBody []string) (factors []float64, err error) {
 	dats, err := c.CalculateForDat(inpBody)
-	if err != nil {
+	if err != nil && len(factors) != len(inpBody) {
 		return factors, err
 	}
 	for _, dat := range dats {
+		// lenght dat file is zero - only if
+		// calculix cannot calculate that task
+		if len(dat) == 0 {
+			factors = append(factors, 0.0)
+			continue
+		}
 		factor, err := getBucklingFactor(dat)
 		if err != nil {
 			return factors, err
