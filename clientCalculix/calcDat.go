@@ -53,12 +53,7 @@ func (c *ClientCalculix) CalculateForDat(inpBody []string) (datBody []string, er
 			defer wg.Done()
 		BACK:
 			client, err := c.getServer()
-			defer func() {
-				err2 := client.Close()
-				if err2 != nil {
-					errChannel <- fmt.Errorf("Errors:%v\n%v", err2, err)
-				}
-			}()
+			var clientOpen bool
 			if err != nil {
 				if err.Error() == serverCalculix.ErrorServerBusy {
 					goto BACK
@@ -66,6 +61,15 @@ func (c *ClientCalculix) CalculateForDat(inpBody []string) (datBody []string, er
 				errChannel <- err
 				return
 			}
+			clientOpen = true
+			defer func() {
+				if clientOpen {
+					err2 := client.Close()
+					if err2 != nil {
+						errChannel <- fmt.Errorf("Errors:%v\n%v", err2, err)
+					}
+				}
+			}()
 
 			var dat serverCalculix.DatBody
 			err = client.Call("Calculix.ExecuteForDat", inpFile, &dat)
