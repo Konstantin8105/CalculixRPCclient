@@ -3,10 +3,10 @@ package main
 import (
 	"fmt"
 
-	"github.com/Konstantin8105/CalculixRPCclient/clientCalculix"
+	"github.com/Konstantin8105/CalculixRPCclient/serverManager"
 )
 
 func main() {
-	manager := clientCalculix.NewServerManager()
+	manager := serverManager.NewServerManager()
 	fmt.Println(manager.ViewTable())
 }
