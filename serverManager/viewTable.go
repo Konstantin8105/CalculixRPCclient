@@ -12,7 +12,10 @@ func (s *ServerManager) ViewTable() (result string) {
 	result += fmt.Sprintf("------|----------------------|----------------------|----------------------|\n")
 	result += fmt.Sprintf("%4v. | %20v | %20v | %20v |\n", "№", "Server address", "Amount of processors", "Allowable ccx")
 	result += fmt.Sprintf("------|----------------------|----------------------|----------------------|\n")
-	for i, ip := range s.ipServers {
+
+	ips := s.ipServers
+
+	for i, ip := range ips {
 
 		client, err := rpc.DialHTTP("tcp", ip)
 		if err != nil {

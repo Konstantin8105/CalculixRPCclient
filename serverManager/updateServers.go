@@ -57,7 +57,7 @@ func (s *ServerManager) updateServersFromNet() {
 		os.Exit(0)
 	}
 	serverList := s.foundIPServers(adresess)
-	if len(s.ipServers) == 0 {
+	if len(serverList) == 0 {
 		// wait and try again
 		timer := time.NewTimer(time.Second * 10)
 		<-timer.C
