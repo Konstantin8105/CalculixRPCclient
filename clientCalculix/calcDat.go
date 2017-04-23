@@ -113,7 +113,9 @@ func (c *ClientCalculix) CalculateForDat(inpBody []string) (datBody []string, er
 	NewInp:
 	}
 
-	fmt.Println("Error before nullization: ", err)
+	if err != nil {
+		fmt.Println("Error before nullization: ", err)
+	}
 	err = nil
 
 	return datBody, err
