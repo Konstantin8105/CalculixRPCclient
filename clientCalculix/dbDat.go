@@ -2,10 +2,6 @@ package clientCalculix
 
 // Database for saving input and output information
 // main folder: dbDatFolder
-// indide main folder:
-// * db.txt - database file in format of line:
-// e2c569be17396eca2a2e3c11578123ed 5
-// md5 + space(" ") + name of folder
 // secondary folder name : 1, 2, 3, ...
 // inside secondary folder:
 // * model.md5 - MD5 hash algorithm of input file
