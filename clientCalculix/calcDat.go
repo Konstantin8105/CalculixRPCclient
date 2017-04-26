@@ -10,6 +10,12 @@ import (
 // CalculateForDat - calculation
 func (c *ClientCalculix) CalculateForDat(inpBody []string) (datBody []string, err error) {
 
+	// connect to database
+	db, err := newDb()
+	if err != nil {
+		return datBody, fmt.Errorf("Cannot connect to db: %v", err)
+	}
+
 	inpMap := make(map[int]string)
 	datMap := make(map[int]string)
 
@@ -51,6 +57,15 @@ func (c *ClientCalculix) CalculateForDat(inpBody []string) (datBody []string, er
 		go func(index int, inpFile string) {
 			// Decrement the counter when the goroutine completes.
 			defer wg.Done()
+
+			// try to find in database
+			datFile, err := db.get(inpFile)
+			if err == nil {
+				fmt.Println("Found in database")
+				blockChannel <- block{index: index, value: datFile}
+				return
+			}
+
 		BACK:
 			client, err := c.getServer()
 			var clientOpen bool
@@ -111,6 +126,17 @@ func (c *ClientCalculix) CalculateForDat(inpBody []string) (datBody []string, er
 		// put zero lenght string
 		datBody = append(datBody, "")
 	NewInp:
+	}
+
+	// write information to database
+	for i, inp := range inpBody {
+		if len(datBody[i]) == 0 {
+			continue
+		}
+		errW := db.write(inp, datBody[i])
+		if errW != nil {
+			err = fmt.Errorf("Error to write the db : %v", errW)
+		}
 	}
 
 	if err != nil {
