@@ -51,6 +51,12 @@ func CalculateForReactionLoad() {
 	// forces (fx,fy,fz) for set LOAD and time  0.2000000E-01
 	// 204  3.485854E+00  1.025290E+01  3.092803E+01
 
-	_, err = calculixResult.SupportForces(lines)
+	v, err := calculixResult.SupportForcesSummary(lines)
+	//v, err := calculixResult.SupportForces(lines)
+	for _, vv := range v {
+		if vv.NodeName == "FIX" {
+			fmt.Println("vv = ", vv)
+		}
+	}
 	fmt.Println("ERROR = ", err)
 }
