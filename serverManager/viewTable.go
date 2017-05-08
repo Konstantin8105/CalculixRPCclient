@@ -9,9 +9,9 @@ import (
 
 // ViewTable - view table of servers
 func (s *ServerManager) ViewTable() (result string) {
-	result += fmt.Sprintf("------|----------------------|----------------------|----------------------|\n")
-	result += fmt.Sprintf("%4v. | %20v | %20v | %20v |\n", "№", "Server address", "Amount of processors", "Allowable ccx")
-	result += fmt.Sprintf("------|----------------------|----------------------|----------------------|\n")
+	result += fmt.Sprintf("------|----------------------|----------------------|----------------------|----------------------|\n")
+	result += fmt.Sprintf("%4v. | %20v | %20v | %20v | %20v |\n", "№", "Server address", "Amount of processors", "ServerId", "Allowable ccx")
+	result += fmt.Sprintf("------|----------------------|----------------------|----------------------|----------------------|\n")
 
 	ips := s.ipServers
 
@@ -43,14 +43,21 @@ func (s *ServerManager) ViewTable() (result string) {
 			return
 		}
 		//
+		var id serverCalculix.ServerName
+		err = client.Call("Calculix.GetServerName", "", &id)
+		if err != nil {
+			fmt.Println("err = ", err)
+			return
+		}
+		//
 		err = client.Close()
 		if err != nil {
 			fmt.Println("err = ", err)
 			return
 		}
 
-		result += fmt.Sprintf("%4v. | %20v | %20v | %20v |\n", i, ip, fmt.Sprintf("%v/%v", amountTask.A, amount.A), check.A)
+		result += fmt.Sprintf("%4v. | %20v | %20v | %20v | %20v |\n", i, ip, fmt.Sprintf("%v/%v", amountTask.A, amount.A), id.A, check.A)
 	}
-	result += fmt.Sprintf("------|----------------------|----------------------|----------------------|\n")
+	result += fmt.Sprintf("------|----------------------|----------------------|----------------------|----------------------|\n")
 	return result
 }

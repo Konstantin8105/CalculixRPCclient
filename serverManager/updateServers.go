@@ -170,6 +170,7 @@ func (s *ServerManager) generateServersIP() (addresses []string, err error) {
 }
 
 func (s *ServerManager) foundIPServers(addresses []string) (serverList []string) {
+
 	ch := make(chan string)
 	quit := make(chan int)
 
@@ -195,7 +196,7 @@ func (s *ServerManager) foundIPServers(addresses []string) (serverList []string)
 	close(ch)
 	<-quit
 
-	return serverList
+	return s.removeDublicateName(serverList)
 }
 
 func (s *ServerManager) checkIP(ip string) bool {
@@ -220,4 +221,65 @@ func (s *ServerManager) checkIP(ip string) bool {
 		return false
 	}
 	return true
+}
+
+func (s *ServerManager) removeDublicateName(addresses []string) (serverList []string) {
+	type ipWithName struct {
+		ip   string
+		name string
+	}
+
+	var ipName []ipWithName
+
+	ch := make(chan ipWithName)
+	quit := make(chan int)
+
+	var wg sync.WaitGroup
+
+	go func() {
+		for c := range ch {
+			ipName = append(ipName, c)
+		}
+		quit <- 1
+	}()
+
+	for _, address := range addresses {
+		wg.Add(1)
+		go func(address string) {
+			defer wg.Done()
+			client, err := rpc.DialHTTP("tcp", address)
+			if err != nil {
+				return
+			}
+			//var amount int
+			var id serverCalculix.ServerName
+			err = client.Call("Calculix.GetServerName", "", &id)
+			if err != nil {
+				fmt.Println("err = ", err)
+				return
+			}
+			ch <- ipWithName{ip: address, name: id.A}
+		}(address)
+	}
+	wg.Wait()
+	close(ch)
+	<-quit
+
+checkAgain:
+	for i := range ipName {
+		for j := range ipName {
+			if i != j {
+				if ipName[i].name == ipName[j].name {
+					ipName = append(ipName[:i], ipName[i+1:]...)
+					goto checkAgain
+				}
+			}
+		}
+	}
+
+	for i := range ipName {
+		serverList = append(serverList, ipName[i].ip)
+	}
+
+	return serverList
 }
