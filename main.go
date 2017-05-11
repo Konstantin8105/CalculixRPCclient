@@ -9,4 +9,5 @@ import (
 func main() {
 	manager := serverManager.NewServerManager()
 	fmt.Println(manager.ViewTable())
+	fmt.Println(manager.ViewServerPerformance())
 }
